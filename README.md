@@ -27,6 +27,8 @@
 6. If the API call fails, the worker retries according to the defined Retry Mechanism.
 And we maintain a `max_retries` count and if retry count exceeds that we move the message back to the queue again, in a different topic to process it separately. So basically, message queue can act as Dead leter queue as well.
 
+![Sequence](./sequence.png)
+
 
 ## Component Breakdown
 
@@ -120,7 +122,9 @@ Configured with appropriate retention timeouts and `error_topic` for failed mess
 *  Redis: for high Performance and low Latency
 
 
-
+## Scalability
+* Can query database in batches to accomodate growing user base
+* Can handle millions of transactions by scaling out worker instances and using a robust message queue.
 
 ## Assumptions
 System is running on AWS and Workers are running as part of an Auto scaling group which scales based on the user base custom metric.
