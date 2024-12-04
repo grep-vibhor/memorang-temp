@@ -3,6 +3,8 @@
 
 ![DESIGN](./memorang.png)
 
+* `User Service`: Manages user registration and authentication.
+
 * `Scheduler Service`: Identifies users with scheduled SIP transactions for the day and enqueues tasks.
 
 * `Message Queue (Task Queue)`: Stores user IDs as tasks to be processed by worker services.
@@ -10,11 +12,12 @@
 * `Worker Services`: Processes tasks by calling the external API. There are replicas of these service to do concurrent API calls to external API and execute transaction
 
 ## Flow
-
-1. The Scheduler Service runs at a scheduled time and fetches all user IDs with SIP transactions scheduled for that day.
-2. It enqueues these user IDs as tasks into the Message Queue.
-3. Worker Services continuously poll the Message Queue for new tasks.
-4. Upon receiving a task, a worker checks the Concurrency Control Mechanism to obtain permission to proceed.
+1. User interacts with the UI to register and set investment preferences.
+2. User Service stores user's data and his investment preference in the database.
+2. The Scheduler Service runs at a scheduled time and fetches all user IDs with SIP transactions scheduled for that day.
+3. It enqueues these user IDs as tasks into the Message Queue.
+4. Worker Services continuously poll the Message Queue for new tasks.
+5. Upon receiving a task, a worker checks the Concurrency Control Mechanism to obtain permission to proceed.
 * Concurrency Management:
   The worker attempts to acquire a token from the *global concurrency limiter* and If successful, it proceeds to call the external API; otherwise, it waits or processes other tasks. The system must not exceed 10,000 concurrent requests to the external API.
   - A central pool of tokens (10,000 tokens representing the concurrency limit) is maintained in Redis.
@@ -22,7 +25,7 @@
   - This ensures that the total number of concurrent API calls across all workers does not exceed 10,000.
   - After the API call is completed (success or failure), the worker releases the token back to the pool, making it available for other workers.
 
-5. If the API call fails, the worker retries according to the defined Retry Mechanism.
+6. If the API call fails, the worker retries according to the defined Retry Mechanism.
 And we maintain a `max_retries` count and if retry count exceeds that we move the message to the queue again, in a different topic to process it separately. So basically, message queue can act as Dead leter queue as well.
 
 
