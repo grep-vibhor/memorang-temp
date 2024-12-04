@@ -42,8 +42,8 @@ Here the challenge is *Volume of Data* to query millions of records efficiently:
 For example, consider a batch size of `5000`
 
 ```sql
-SELECT user_id FROM users_sip WHERE scheduled_date = 'YYYY-MM-DD' LIMIT 5000 OFFSET 0;
-SELECT user_id FROM users_sip WHERE scheduled_date = 'YYYY-MM-DD' LIMIT 5000 OFFSET 5000;
+SELECT user_id, investment_amount  FROM users_sip WHERE scheduled_date = 'YYYY-MM-DD' LIMIT 5000 OFFSET 0;
+SELECT user_id, investment_amount FROM users_sip WHERE scheduled_date = 'YYYY-MM-DD' LIMIT 5000 OFFSET 5000;
 -- Continue until all records are fetched.
 ```
 
@@ -59,9 +59,9 @@ offset = 0
 messages = []
 
 while offset < total_records:
-    user_ids = query_database(limit=batch_size, offset=offset)
-    for user_id in user_ids:
-        message = {"user_id": user_id}
+    users = query_database(limit=batch_size, offset=offset)
+    for user in users:
+        message = {"user_id": user.id, "investment_amount": user.amount}
         messages.append(message)
     queue.send_messages(messages)
     offset += batch_size
@@ -72,14 +72,15 @@ while offset < total_records:
 * Each message in the queue represents a task to process a user's SIP transaction, something like:
 ```json
 {
-  "user_id": "1234567890"
+  "user_id": "1234567890",
+  "investment_amount": 1000
 }
 ```
 * We'll do **Batch Enqueuing** as mentioned in above code snippet (pushing messages array to queue) so that reduces the number of network calls to the message queue service.
 
 ###  3. Worker Service
 
-* All it has to do is that, consume tasks from the message queue and call the external API with `userID` query parameter to perform the transaction.
+* All it has to do is that, consume tasks from the message queue and call the external API with `userID` and `investment_amount` as  query parameters to perform the transaction.
 
 * Challenge here is to implement rate limiting control to respect the 5000 RPS limit. We deal it with tokens maintained in Redis as mentioned in `Flow` section of this README
 
